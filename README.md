@@ -22,4 +22,4 @@ a project for IT140P
 | `getTileSequence` | Provides the pulse sequence the player needs to memorize                 |
 | `getLeaderboard`  | Returns a ranked list of top scores for leaderboard screen               |
 | `updateDifficulty`| Lets users change difficulty settings and saves it on DB (XAMPP backend) |
-
+| idk | supposedly 4 daw need eh |
