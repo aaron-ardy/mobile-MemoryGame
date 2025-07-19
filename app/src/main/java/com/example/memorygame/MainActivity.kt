@@ -15,7 +15,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
-
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 
 import com.example.memorygame.ui.theme.MemoryGameTheme
 
@@ -23,10 +26,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             MemoryGameTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MenuScreen(modifier = Modifier.padding(innerPadding))
+                val navController = rememberNavController()
+
+                NavHost(navController = navController, startDestination = "menu") {
+                    composable("menu") {
+                        MenuScreen(navController = navController)
+                    }
+                    composable("game") {
+                        GameScreen()
+                    }
                 }
             }
         }
@@ -34,7 +45,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MenuScreen(modifier: Modifier = Modifier) {
+fun MenuScreen(navController: NavHostController) {
     var showDifficultyDialog by remember { mutableStateOf(false) }
     var showHighScoreDialog by remember { mutableStateOf(false) }
     var selectedDifficulty by remember { mutableStateOf("Easy") }
@@ -44,7 +55,7 @@ fun MenuScreen(modifier: Modifier = Modifier) {
 
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(32.dp),
         verticalArrangement = Arrangement.Center,
@@ -53,7 +64,10 @@ fun MenuScreen(modifier: Modifier = Modifier) {
         Text("🧠 Memory Game", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(onClick = { /* TODO: Start game with selectedDifficulty */ }, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = { navController.navigate("game") },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Play")
         }
 
@@ -174,7 +188,8 @@ fun DifficultyDialog(onDismiss: () -> Unit, onSelect: (String) -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun MenuPreview() {
+    val dummyNav = rememberNavController()
     MemoryGameTheme {
-        MenuScreen()
+        MenuScreen(navController = dummyNav)
     }
 }
