@@ -1,0 +1,37 @@
+# Gradle files
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration
+local.properties
+
+# IDE settings
+.idea/
+*.iml
+*.iws
+
+# OS-generated
+.DS_Store
+Thumbs.db
+
+# Dependency Caches
+.caches/
+.externalNativeBuild/
+
+# Ktor HTTP client artifacts
+*.jar
+*.aar
+
+# APKs and generated outputs
+*.apk
+*.ap_
+
+# Logs
+*.log
+
+# Config file for dynamic IPs
+app/src/main/assets/api_config.json
+
+# Node/NPM artifacts (if you use any JS-based tooling)
+node_modules/
