@@ -1,11 +1,11 @@
 package com.example.memorygame
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,12 +15,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-
+import androidx.navigation.NavType
+import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.example.memorygame.ui.theme.MemoryGameTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,8 +35,18 @@ class MainActivity : ComponentActivity() {
                     composable("menu") {
                         MenuScreen(navController = navController)
                     }
-                    composable("game") {
-                        GameScreen()
+                    composable(
+                        "game/{tileCount}",
+                        arguments = listOf(navArgument("tileCount") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val tileCount = backStackEntry.arguments?.getInt("tileCount") ?: 4
+                        GameScreen(
+                            level = 1, // initial level
+                            tileCount = tileCount,
+                            onBackToMenu = {
+                                navController.popBackStack()
+                            }
+                        )
                     }
                 }
             }
@@ -53,7 +63,6 @@ fun MenuScreen(navController: NavHostController) {
     val activity = context as? Activity
     var showExitDialog by remember { mutableStateOf(false) }
 
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,7 +74,14 @@ fun MenuScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { navController.navigate("game") },
+            onClick = {
+                val tileCount = when (selectedDifficulty) {
+                    "Intermediate" -> 6
+                    "Hard" -> 8
+                    else -> 4
+                }
+                navController.navigate("game/$tileCount")
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Play")
@@ -94,24 +110,20 @@ fun MenuScreen(navController: NavHostController) {
         }
     }
 
-    // modal after clicking diff button
     if (showDifficultyDialog) {
         DifficultyDialog(
             onDismiss = { showDifficultyDialog = false },
             onSelect = {
                 selectedDifficulty = it
                 showDifficultyDialog = false
-                // TODO: Send difficulty to backend via REST (XAMPP + PHP + phpMyAdmin)
             }
         )
     }
 
-    // hs modal
     if (showHighScoreDialog) {
         HighScoreDialog(onDismiss = { showHighScoreDialog = false })
     }
 
-    // exit modal
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
@@ -120,7 +132,7 @@ fun MenuScreen(navController: NavHostController) {
             confirmButton = {
                 TextButton(onClick = {
                     showExitDialog = false
-                    activity?.finish() // ✅ This closes the app
+                    activity?.finish()
                 }) {
                     Text("Yes")
                 }
@@ -136,23 +148,37 @@ fun MenuScreen(navController: NavHostController) {
 
 @Composable
 fun HighScoreDialog(onDismiss: () -> Unit) {
+    val coroutineScope = rememberCoroutineScope()
+    var scores by remember { mutableStateOf<List<KtorTileHelper.LeaderboardEntry>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            isLoading = true
+            scores = KtorTileHelper.fetchTopLeaderboard()
+            isLoading = false
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("High Scores") },
+        title = { Text("Top 10 Leaderboard") },
         text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                // TODO: Replace with actual scores loaded from REST API
-                val dummyScores = listOf(
-                    "1. Balbas — 1200",
-                    "2. JamieOliver — 950",
-                    "3. Rat — 880",
-                    "4. Kupal — 750",
-                    "5. Hotdog — 620",
-                    "6. Cakedup — 590",
-                    "7. Epstein — 12"
-                )
-                dummyScores.forEach { score ->
-                    Text(score, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 4.dp))
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+            } else {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    if (scores.isEmpty()) {
+                        Text("No scores available.", style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        scores.take(10).forEachIndexed { index, entry ->
+                            Text(
+                                "${index + 1}. ${entry.name} — ${entry.score}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
         },
